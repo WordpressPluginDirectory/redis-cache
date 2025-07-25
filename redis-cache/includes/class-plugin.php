@@ -333,7 +333,12 @@ class Plugin {
             return;
         }
 
-        wp_enqueue_style( 'redis-cache', WP_REDIS_PLUGIN_DIR . '/assets/css/admin.css', [], WP_REDIS_VERSION );
+        wp_enqueue_style(
+            'redis-cache',
+            trailingslashit( WP_REDIS_PLUGIN_DIR ) . 'assets/css/admin.css',
+            [],
+            WP_REDIS_VERSION
+        );
     }
 
     /**
@@ -822,8 +827,9 @@ class Plugin {
      * @return string
      */
     protected function admin_bar_style() {
+        // phpcs:disable Squiz.PHP.Heredoc.NotAllowed
         return <<<HTML
-            <style>
+            <style id="redis-cache-admin-bar-style">
                 #wpadminbar ul li.redis-cache-error {
                     background: #b30000;
                 }
@@ -847,7 +853,7 @@ HTML;
         $flushMessage = __( 'Flushing cache...', 'redis-cache' );
 
         return <<<HTML
-            <script>
+            <script id="redis-cache-admin-bar">
                 (function (element) {
                     if (! element) {
                         return;
@@ -1071,15 +1077,13 @@ HTML;
      * @return void
      */
     public function ajax_flush_cache() {
-        if ( ! wp_verify_nonce( $_POST['nonce'] ) ) {
-            $message = 'Invalid Nonce.';
+        if ( ! wp_verify_nonce( $_POST['nonce'] ?? '' ) ) { // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
+            wp_die( esc_html__( 'Invalid Nonce.', 'redis-cache' ) );
         } else if ( wp_cache_flush() ) {
-            $message = 'Object cache flushed.';
+            wp_die( esc_html__( 'Object cache flushed.', 'redis-cache' ) );
         } else {
-            $message = 'Object cache could not be flushed.';
+            wp_die( esc_html__( 'Object cache could not be flushed.', 'redis-cache' ) );
         }
-
-        wp_die( __( $message , 'redis-cache' ) );
     }
 
     /**
@@ -1595,6 +1599,7 @@ HTML;
      * @return void
      */
     public function litespeed_disable_objectcache() {
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing
         if ( isset( $_POST['LSCWP_CTRL'], $_POST['LSCWP_NONCE'], $_POST['object'] ) ) {
             $_POST['object'] = '0';
         }
